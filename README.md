@@ -1,0 +1,1 @@
+These are trading indicators that I have coded through the years in my career as a trader. Most of them are designed for stock trading but there can be many cases where the same indicator can be used for other instruments.
