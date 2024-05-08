@@ -1,0 +1,65 @@
+//@version=5
+indicator("EMA and New Low/High Detector")
+
+//Inputs
+n_bars = input.int(20, "n bars", minval=1)
+amp_thr = input.float(0.1, "amplitude threshold in % of past max amplitude", minval=0.0, maxval=1.0, step=0.01)
+
+ema1 = input.int(20, "EMA 1")
+ema2 = input.int(50, "EMA 2")
+ema3 = input.int(200, "EMA 3")
+
+//EMA calculations
+ema1Value = ta.ema(close, ema1)
+ema2Value = ta.ema(close, ema2)
+ema3Value = ta.ema(close, ema3)
+
+//amplitude
+amp_up = (high - open) / open
+amp_down = (open - low) / open
+
+max_amp_up = ta.highest(amp_up, n_bars * 10)
+max_amp_down = ta.highest(amp_down, n_bars * 10)
+
+rel_amp_up = amp_up / max_amp_up
+rel_amp_down = amp_down / max_amp_down
+
+//nlnh value
+//lowest/highest close/wick since x bars (relative to n_bars from 0 to 1)
+lowest_wick_since = 1.0
+highest_wick_since = 1.0
+
+for i = 1 to n_bars
+    if lowest_wick_since == 1.0 and low > low[i]
+        lowest_wick_since := (i - 1) / n_bars
+    if highest_wick_since == 1.0 and high < high[i]
+        highest_wick_since := (i - 1) / n_bars
+    if lowest_wick_since != 1.0 and highest_wick_since != 1.0
+        break
+
+new_high = highest_wick_since == 1.0 and rel_amp_up >= amp_thr
+new_low = lowest_wick_since == 1.0 and rel_amp_down >= amp_thr
+
+//Price below all 3 EMAs condition
+belowAll3 = close < ema1Value and close < ema2Value and close < ema3Value
+
+//Price above all 3 EMAs condition
+aboveAll3 = close > ema1Value and close > ema2Value and close > ema3Value
+
+//Price below all 3 EMAs in past n bars condition
+pastBelowAll3 = false
+for i = 1 to n_bars
+    if low[i] < ema1Value[i] and low[i] < ema2Value[i] and low[i] < ema3Value[i]
+        pastBelowAll3 := true
+        break
+
+//Price above all 3 EMAs in past n bars condition
+pastAboveAll3 = false
+for i = 1 to n_bars
+    if high[i] > ema1Value[i] and high[i] > ema2Value[i] and high[i] > ema3Value[i]
+        pastAboveAll3 := true
+        break
+
+//Plotting conditions
+plotshape(series=new_high and pastBelowAll3 and aboveAll3, color=color.blue, style=shape.circle, location=location.abovebar, size=size.tiny)
+plotshape(series=new_low and pastAboveAll3 and belowAll3, color=color.red, style=shape.circle, location=location.belowbar, size=size.tiny)
