@@ -1,0 +1,23 @@
+//@version=5
+indicator("Volume Breakout Indicator", overlay=true)
+
+// Define Inputs
+ema13Length = input(title="EMA 13 Length", defval=13)
+ema20Length = input(title="EMA 20 Length", defval=20)
+ema50Length = input(title="EMA 50 Length", defval=50)
+
+// Define Indicators
+ema13 = ta.ema(close, ema13Length)
+ema20 = ta.ema(close, ema20Length)
+ema50 = ta.ema(close, ema50Length)
+vwap = ta.vwap
+
+// Define Conditions
+aboveVWAP = close > vwap
+aboveEMAs = close > ema13 and close > ema20 and close > ema50
+highestVolumeBar = ta.barssince(volume == ta.highest(volume, 10)) == 0 and volume >= 10000
+positiveCandle = close > open
+
+// Define Icon
+plotshape(aboveVWAP and aboveEMAs and highestVolumeBar and positiveCandle, style=shape.labelup, location=location.abovebar, color=color.green, size=size.tiny)
+
