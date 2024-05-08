@@ -1,0 +1,49 @@
+//@version=4
+study("Custom Indicator", overlay=true)
+
+length1 = input(13, title="EMA Length 1")
+length2 = input(20, title="EMA Length 2")
+length3 = input(50, title="EMA Length 3")
+
+// Calculate moving averages
+ema1 = ema(close, length1)
+ema2 = ema(close, length2)
+ema3 = ema(close, length3)
+vwap = vwap(hlc3)
+
+// Condition 1: At least 5 candles with lower wicks at least 20% of the total body in the past 10 candles
+lowerWickCount = sum(low < (open + close) * 0.8 ? 1 : 0, 10)
+lowerWickCondition = lowerWickCount >= 5
+
+// Condition 2: Low of 1 candle below at least 2 of the moving averages (EMA 13, EMA 20, EMA 50, VWAP) in the past 10 candles
+lowBelowMAsCount = 0
+if low[1] < ema1[1] or low[1] < ema2[1] or low[1] < ema3[1] or low[1] < vwap[1]
+    lowBelowMAsCount := lowBelowMAsCount + 1
+if low[2] < ema1[2] or low[2] < ema2[2] or low[2] < ema3[2] or low[2] < vwap[2]
+    lowBelowMAsCount := lowBelowMAsCount + 1
+
+lowBelowMAsCondition = lowBelowMAsCount >= 2
+
+// Condition 3: Price above all 4 moving averages (EMA 13, EMA 20, EMA 50, VWAP) and positive candlestick
+aboveMAsCondition = close > ema1 and close > ema2 and close > ema3 and close > vwap
+positiveCandleCondition = close > open
+
+// Condition 4: Volume higher than the volume of the 3 previous candles
+volumeCondition = volume > max(max(volume[1], volume[2]), volume[3])
+
+// Additional Conditions:
+minVolume = 10000
+highAbovePrevHigh = high > highest(high[1], 5)
+volumeAboveAverage = volume > sma(volume, 10)
+
+// Condition 5: At least 40% of the candle body above VWAP, EMA 20, and EMA 50
+candleAboveVWAP = close > vwap and open > vwap
+candleAboveEMA20 = close > ema2 and open > ema2
+candleAboveEMA50 = close > ema3 and open > ema3
+candleBodyAboveThreshold = (high - low) * 0.4 <= abs(close - open)
+
+// Combine conditions to generate signal
+signal = lowerWickCondition and lowBelowMAsCondition and aboveMAsCondition and positiveCandleCondition and volumeCondition and volume >= minVolume and highAbovePrevHigh and volumeAboveAverage and candleAboveVWAP and candleAboveEMA20 and candleAboveEMA50 and candleBodyAboveThreshold
+
+// Plot signal
+plotshape(signal, color=color.blue, style=shape.circle, location=location.belowbar, size=size.tiny)
